@@ -5,10 +5,11 @@
   box-sizing: border-box;
 }
 
-html, body {
+html,
+body {
   width: 100%;
   min-height: 100vh; /* Allow content to expand */
-  font-family: 'Poppins', 'OpenDyslexic', Arial, sans-serif;
+  font-family: "Poppins", "OpenDyslexic", Arial, sans-serif;
   background: linear-gradient(135deg, #f0f4f8, #d9e2ec);
   color: #333; /* Default text color for readability */
   overflow-x: hidden;
@@ -25,6 +26,38 @@ html, body {
 }
 
 @font-face {
-  font-family: 'OpenDyslexic';
-  src: url('./fonts/OpenDyslexic-Regular.otf') format('opentype');
+  font-family: "OpenDyslexic";
+  src: url("./fonts/OpenDyslexic-Regular.otf") format("opentype");
+}
+
+/* Add smooth scrolling for better user experience */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Improve focus styles for accessibility */
+:focus {
+  outline: 3px solid rgba(66, 153, 225, 0.5);
+  outline-offset: 2px;
+}
+
+/* Ensure images don't overflow their containers */
+img {
+  max-width: 100%;
+  height: auto;
+}
+
+/* Add transitions to all interactive elements */
+a,
+button,
+input,
+select,
+textarea {
+  transition: all 0.3s ease;
+}
+
+/* Improve text selection styling */
+::selection {
+  background-color: rgba(66, 153, 225, 0.3);
+  color: #2d3748;
 }
