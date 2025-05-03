@@ -46,8 +46,12 @@
 .character {
   width: 150px;
   height: 150px;
-  margin-bottom: 25px;
+  margin: 0 auto;
+  display: block;
+  vertical-align: top;
   animation: float 4s ease-in-out infinite;
+  position: relative;
+  bottom: 0; /* Adjust if needed to overlap slightly */
 }
 
 @keyframes float {
@@ -71,7 +75,9 @@
 .login-box h2 {
   color: #5a67d8;
   font-size: 36px;
-  margin-bottom: 30px;
+  margin: 0 0 30px 0;
+  padding-top: 0;
+  line-height: 1; /* Minimize vertical space */
   font-weight: 700;
   font-family: "Bubblegum Sans", cursive;
   text-shadow: 2px 2px 0px rgba(110, 142, 251, 0.2);
@@ -266,6 +272,11 @@
     padding: 10px 20px;
     font-size: 14px;
   }
+
+  .character {
+    width: 120px;
+    height: 120px;
+  }
 }
 
 @media (max-width: 360px) {
@@ -277,5 +288,10 @@
     width: 40px;
     height: 50px;
     font-size: 20px;
+  }
+
+  .character {
+    width: 100px;
+    height: 100px;
   }
 }

@@ -1,4 +1,3 @@
-/* Game Styles */
 @import url("https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap");
 
 .game-container {
@@ -6,12 +5,13 @@
   width: 100vw;
   height: 100vh;
   overflow: hidden;
-  font-family: "Nunito", "Poppins", sans-serif;
+  font-family: "Nunito", sans-serif;
   display: flex;
   justify-content: center;
   align-items: center;
   margin: 0;
   padding: 0;
+  background-color: #fff7ed; /* Light cream for neutral, warm base */
 }
 
 .background-video {
@@ -21,48 +21,47 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
-  z-index: -2;
+  z-index: -1;
+  opacity: 0.6;
 }
 
 .content {
   position: relative;
   z-index: 10;
-  background-color: rgba(255, 255, 255, 0.9);
-  border-radius: 24px;
+  background-color: rgba(255, 255, 255, 0.95);
+  border-radius: 20px;
   padding: 40px;
   width: 90%;
   max-width: 800px;
   text-align: center;
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.08);
 }
 
 h1 {
-  color: #4a5568;
+  color: #1a202c;
   font-size: 2.5rem;
   margin-bottom: 30px;
-  font-weight: 800;
-  background: linear-gradient(to right, #6e8efb, #a777e3);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  line-height: 1.5;
 }
 
 .start-button {
-  background: linear-gradient(to right, #6e8efb, #a777e3);
-  color: white;
+  background-color: #68d391;
+  color: #ffffff;
   border: none;
   padding: 15px 40px;
   font-size: 1.2rem;
-  font-weight: 700;
+  font-weight: 600;
   border-radius: 50px;
   cursor: pointer;
-  transition: all 0.3s ease;
-  box-shadow: 0 10px 20px rgba(110, 142, 251, 0.3);
+  transition: background-color 0.3s ease;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
 }
 
 .start-button:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 15px 30px rgba(110, 142, 251, 0.4);
+  background-color: #48bb78;
+  transform: translateY(-3px);
 }
 
 .start-button:active {
@@ -88,22 +87,22 @@ h1 {
   width: 200px;
   height: 200px;
   object-fit: contain;
-  border-radius: 20px;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
-  background-color: rgba(255, 255, 255, 0.8);
-  padding: 20px;
-  transition: transform 0.3s ease;
+  border-radius: 15px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+  background-color: #ffffff;
+  padding: 15px;
+  transition: transform 0.2s ease;
 }
 
 .animal-image:hover {
-  transform: scale(1.05);
+  transform: scale(1.03);
 }
 
 .letters-container {
   display: flex;
   justify-content: center;
   flex-wrap: wrap;
-  gap: 15px;
+  gap: 20px;
   margin: 30px 0;
   width: 100%;
 }
@@ -111,34 +110,34 @@ h1 {
 .draggable-letter {
   width: 60px;
   height: 60px;
-  background: linear-gradient(135deg, #6e8efb, #a777e3);
-  color: white;
-  border-radius: 12px;
+  background-color: #edf2f7;
+  color: #1a202c;
+  border-radius: 10px;
   display: flex;
   justify-content: center;
   align-items: center;
   font-size: 24px;
-  font-weight: 700;
+  font-weight: 600;
   cursor: grab;
   user-select: none;
-  box-shadow: 0 5px 15px rgba(110, 142, 251, 0.3);
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.08);
   transition: all 0.2s ease;
 }
 
 .draggable-letter:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 8px 20px rgba(110, 142, 251, 0.4);
+  transform: translateY(-3px);
+  background-color: #e2e8f0;
 }
 
 .draggable-letter:active {
   cursor: grabbing;
-  transform: scale(1.1);
+  transform: scale(1.05);
 }
 
 .dropzones-container {
   display: flex;
   justify-content: center;
-  gap: 15px;
+  gap: 20px;
   margin: 20px 0 30px;
   width: 100%;
   flex-wrap: wrap;
@@ -147,57 +146,79 @@ h1 {
 .dropzone {
   width: 60px;
   height: 60px;
-  border: 3px dashed #cbd5e0;
-  border-radius: 12px;
+  border: 3px dashed #a0aec0;
+  border-radius: 10px;
   display: flex;
   justify-content: center;
   align-items: center;
   font-size: 24px;
-  font-weight: 700;
-  color: #4a5568;
+  font-weight: 600;
+  color: #1a202c;
   transition: all 0.2s ease;
 }
 
 .dropzone.filled {
-  border: 3px solid #6e8efb;
-  background-color: rgba(110, 142, 251, 0.1);
+  border: 3px solid #2d3748;
+  background-color: rgba(160, 174, 192, 0.15);
 }
 
 .feedback {
   font-size: 24px;
-  font-weight: 700;
+  font-weight: 600;
   margin: 20px 0;
   padding: 10px 30px;
   border-radius: 50px;
-  animation: pulse 1s infinite;
 }
 
 .feedback.correct {
-  background-color: rgba(72, 187, 120, 0.2);
-  color: #2f855a;
+  background-color: rgba(104, 211, 145, 0.15);
+  color: #276749;
 }
 
 .feedback.wrong {
-  background-color: rgba(245, 101, 101, 0.2);
-  color: #c53030;
-}
-
-@keyframes pulse {
-  0% {
-    transform: scale(1);
-  }
-  50% {
-    transform: scale(1.05);
-  }
-  100% {
-    transform: scale(1);
-  }
+  background-color: rgba(237, 242, 247, 0.15);
+  color: #2d3748;
 }
 
 .score {
   font-size: 18px;
+  font-weight: 600;
+  color: #1a202c;
+  margin-top: 20px;
+}
+
+.report-details {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  font-size: 1.2rem;
+  color: #1a202c;
+  font-weight: 600;
+  margin-top: 20px;
+}
+
+.report-details h2 {
+  font-size: 1.8rem;
+  color: #1a202c;
+  margin-bottom: 15px;
   font-weight: 700;
-  color: #4a5568;
+  letter-spacing: 0.06em;
+}
+
+.report-details p {
+  margin: 0;
+  padding: 10px;
+  background-color: rgba(237, 242, 247, 0.15);
+  border-radius: 10px;
+}
+
+.report-error {
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: #2d3748;
+  background-color: rgba(237, 242, 247, 0.3);
+  padding: 15px;
+  border-radius: 10px;
   margin-top: 20px;
 }
 
@@ -222,6 +243,10 @@ h1 {
     width: 50px;
     height: 50px;
     font-size: 20px;
+  }
+
+  .report-details {
+    font-size: 1rem;
   }
 }
 
@@ -251,6 +276,10 @@ h1 {
   .letters-container,
   .dropzones-container {
     gap: 10px;
+  }
+
+  .report-details h2 {
+    font-size: 1.5rem;
   }
 }
 

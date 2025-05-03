@@ -1,8 +1,317 @@
+// const express = require('express');
+// const router = express.Router();
+// const bcrypt = require('bcryptjs');
+// const jwt = require('jsonwebtoken');
+// const Child = require('../models/Child');
+
+// // Child Login
+// router.post('/login', async (req, res) => {
+//   const { childName, userId, password } = req.body;
+//   if (!childName || !userId || !password) {
+//     return res.status(400).json({ message: 'All fields are required' });
+//   }
+
+//   try {
+//     const child = await Child.findOne({
+//       childName: { $regex: new RegExp(`^${childName}$`, 'i') },
+//       userId,
+//     });
+//     if (!child || !child.isActive) {
+//       return res.status(401).json({ message: 'Invalid credentials or account disabled' });
+//     }
+
+//     const isMatch = await bcrypt.compare(password, child.password);
+//     if (!isMatch) return res.status(401).json({ message: 'Invalid password' });
+
+//     const token = jwt.sign(
+//       { userId: child.userId, childName: child.childName },
+//       process.env.JWT_SECRET,
+//       { expiresIn: '1h' }
+//     );
+//     res.json({ message: 'Login successful', token, userId: child.userId });
+//   } catch (err) {
+//     console.error('❌ Child login error:', err);
+//     res.status(500).json({ message: 'Server error' });
+//   }
+// });
+
+// // Save Emotion Data
+// router.post('/save-emotion', async (req, res) => {
+//   const { userId, emotion, question } = req.body;
+//   if (!userId || !emotion || !question) {
+//     return res.status(400).json({ message: 'All fields are required' });
+//   }
+
+//   try {
+//     const child = await Child.findOne({ userId });
+//     if (!child || !child.isActive) {
+//       return res.status(404).json({ message: 'Child not found or disabled' });
+//     }
+
+//     child.emotionHistory.push({ emotion, question, timestamp: new Date() });
+//     await child.save();
+
+//     req.app.get('io').emit('emotionUpdate', {
+//       parentId: child.parentId,
+//       userId,
+//       emotion,
+//       question,
+//       timestamp: new Date(),
+//     });
+//     res.json({ message: 'Emotion saved successfully' });
+//   } catch (err) {
+//     console.error('❌ Error saving emotion:', err);
+//     res.status(500).json({ message: 'Server error' });
+//   }
+// });
+
+// // Get Emotion Trends
+// router.get('/emotion-trends/:userId', async (req, res) => {
+//   try {
+//     const child = await Child.findOne({ userId: req.params.userId });
+//     if (!child) return res.status(404).json({ message: 'Child not found' });
+//     res.json(child.emotionHistory);
+//   } catch (err) {
+//     console.error('❌ Error fetching emotion trends:', err);
+//     res.status(500).json({ message: 'Server error' });
+//   }
+// });
+
+// // Save Game Report
+// router.post('/save-game', async (req, res) => {
+//   const { userId, score, emotions, question, isCorrect } = req.body;
+//   if (!userId || score === undefined || !question || isCorrect === undefined) {
+//     return res.status(400).json({ message: 'userId, score, question, and isCorrect are required' });
+//   }
+
+//   try {
+//     const child = await Child.findOne({ userId });
+//     if (!child || !child.isActive) {
+//       return res.status(404).json({ message: 'Child not found or disabled' });
+//     }
+
+//     child.gameReports.push({ score, emotions, question, isCorrect, completedAt: new Date() });
+//     await child.save();
+
+//     req.app.get('io').emit('gameReportUpdate', {
+//       parentId: child.parentId,
+//       userId,
+//       score,
+//       emotions,
+//       question,
+//       isCorrect,
+//       completedAt: new Date(),
+//     });
+//     res.json({ message: 'Game report saved successfully' });
+//   } catch (err) {
+//     console.error('❌ Error saving game report:', err);
+//     res.status(500).json({ message: 'Server error' });
+//   }
+// });
+
+// // Get Game Reports
+// router.get('/game-reports/:userId', async (req, res) => {
+//   try {
+//     const child = await Child.findOne({ userId: req.params.userId });
+//     if (!child) return res.status(404).json({ message: 'Child not found' });
+//     res.json(child.gameReports);
+//   } catch (err) {
+//     console.error('❌ Error fetching game reports:', err);
+//     res.status(500).json({ message: 'Server error' });
+//   }
+// });
+
+// module.exports = router;
+////////////////////////////
+// const express = require('express');
+// const router = express.Router();
+// const bcrypt = require('bcryptjs');
+// const jwt = require('jsonwebtoken');
+// const Child = require('../models/Child');
+
+// // Middleware to verify JWT token
+// const verifyToken = (req, res, next) => {
+//   const token = req.headers['authorization']?.split(' ')[1];
+//   if (!token) return res.status(401).json({ message: 'No token provided' });
+
+//   try {
+//     const decoded = jwt.verify(token, process.env.JWT_SECRET);
+//     req.user = decoded;
+//     next();
+//   } catch (err) {
+//     console.error('❌ Token verification failed:', err);
+//     res.status(401).json({ message: 'Invalid token' });
+//   }
+// };
+
+// // Child Login
+// router.post('/login', async (req, res) => {
+//   const { childName, userId, password } = req.body;
+//   if (!childName || !userId || !password) {
+//     return res.status(400).json({ message: 'All fields are required' });
+//   }
+
+//   try {
+//     const child = await Child.findOne({
+//       childName: { $regex: new RegExp(`^${childName}$`, 'i') },
+//       userId,
+//     });
+//     if (!child || !child.isActive) {
+//       return res.status(401).json({ message: 'Invalid credentials or account disabled' });
+//     }
+
+//     const isMatch = await bcrypt.compare(password, child.password);
+//     if (!isMatch) return res.status(401).json({ message: 'Invalid password' });
+
+//     const token = jwt.sign(
+//       { userId: child.userId, childName: child.childName },
+//       process.env.JWT_SECRET,
+//       { expiresIn: '1h' }
+//     );
+//     res.json({ message: 'Login successful', token, userId: child.userId });
+//   } catch (err) {
+//     console.error('❌ Child login error:', err);
+//     res.status(500).json({ message: 'Server error' });
+//   }
+// });
+
+// // Detect Emotion (Forward to Flask)
+// router.post('/detect-emotion', verifyToken, async (req, res) => {
+//   const { landmarks } = req.body;
+//   if (!landmarks) {
+//     return res.status(400).json({ message: 'Landmarks are required' });
+//   }
+
+//   try {
+//     // Dynamically import node-fetch (ESM module)
+//     const { default: fetch } = await import('node-fetch');
+
+//     const response = await fetch('http://localhost:5000/detect_emotion', {
+//       method: 'POST',
+//       headers: { 'Content-Type': 'application/json' },
+//       body: JSON.stringify({ landmarks }),
+//     });
+
+//     const data = await response.json();
+//     if (response.ok) {
+//       res.json(data); // Forward Flask response to frontend
+//     } else {
+//       console.error('❌ Flask response error:', data);
+//       res.status(response.status).json(data);
+//     }
+//   } catch (err) {
+//     console.error('❌ Error forwarding to Flask:', err);
+//     res.status(500).json({ message: 'Error communicating with emotion detection service' });
+//   }
+// });
+
+// // Save Emotion Data
+// router.post('/save-emotion', verifyToken, async (req, res) => {
+//   const { userId, emotion, question } = req.body;
+//   if (!userId || !emotion || !question) {
+//     return res.status(400).json({ message: 'All fields are required' });
+//   }
+
+//   try {
+//     const child = await Child.findOne({ userId });
+//     if (!child || !child.isActive) {
+//       return res.status(404).json({ message: 'Child not found or disabled' });
+//     }
+
+//     child.emotionHistory.push({ emotion, question, timestamp: new Date() });
+//     await child.save();
+
+//     req.app.get('io').emit('emotionUpdate', {
+//       parentId: child.parentId,
+//       userId,
+//       emotion,
+//       question,
+//       timestamp: new Date(),
+//     });
+//     res.json({ message: 'Emotion saved successfully' });
+//   } catch (err) {
+//     console.error('❌ Error saving emotion:', err);
+//     res.status(500).json({ message: 'Server error' });
+//   }
+// });
+
+// // Get Emotion Trends
+// router.get('/emotion-trends/:userId', verifyToken, async (req, res) => {
+//   try {
+//     const child = await Child.findOne({ userId: req.params.userId });
+//     if (!child) return res.status(404).json({ message: 'Child not found' });
+//     res.json(child.emotionHistory);
+//   } catch (err) {
+//     console.error('❌ Error fetching emotion trends:', err);
+//     res.status(500).json({ message: 'Server error' });
+//   }
+// });
+
+// // Save Game Report
+// router.post('/save-game', verifyToken, async (req, res) => {
+//   const { userId, score, emotions, question, isCorrect } = req.body;
+//   if (!userId || score === undefined || !question || isCorrect === undefined) {
+//     return res.status(400).json({ message: 'userId, score, question, and isCorrect are required' });
+//   }
+
+//   try {
+//     const child = await Child.findOne({ userId });
+//     if (!child || !child.isActive) {
+//       return res.status(404).json({ message: 'Child not found or disabled' });
+//     }
+
+//     child.gameReports.push({ score, emotions, question, isCorrect, completedAt: new Date() });
+//     await child.save();
+
+//     req.app.get('io').emit('gameReportUpdate', {
+//       parentId: child.parentId,
+//       userId,
+//       score,
+//       emotions,
+//       question,
+//       isCorrect,
+//       completedAt: new Date(),
+//     });
+//     res.json({ message: 'Game report saved successfully' });
+//   } catch (err) {
+//     console.error('❌ Error saving game report:', err);
+//     res.status(500).json({ message: 'Server error' });
+//   }
+// });
+
+// // Get Game Reports
+// router.get('/game-reports/:userId', verifyToken, async (req, res) => {
+//   try {
+//     const child = await Child.findOne({ userId: req.params.userId });
+//     if (!child) return res.status(404).json({ message: 'Child not found' });
+//     res.json(child.gameReports);
+//   } catch (err) {
+//     console.error('❌ Error fetching game reports:', err);
+//     res.status(500).json({ message: 'Server error' });
+//   }
+// });
+
+// module.exports = router;
 const express = require('express');
 const router = express.Router();
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const Child = require('../models/Child');
+
+// Middleware to verify JWT token
+const verifyToken = (req, res, next) => {
+  const token = req.headers['authorization']?.split(' ')[1];
+  if (!token) return res.status(401).json({ message: 'No token provided' });
+
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    req.user = decoded;
+    next();
+  } catch (err) {
+    console.error('❌ Token verification failed:', err);
+    res.status(401).json({ message: 'Invalid token' });
+  }
+};
 
 // Child Login
 router.post('/login', async (req, res) => {
@@ -35,8 +344,37 @@ router.post('/login', async (req, res) => {
   }
 });
 
+// Detect Emotion (Forward to Flask)
+router.post('/detect-emotion', verifyToken, async (req, res) => {
+  const { landmarks } = req.body;
+  if (!landmarks) {
+    return res.status(400).json({ message: 'Landmarks are required' });
+  }
+
+  try {
+    const { default: fetch } = await import('node-fetch');
+
+    const response = await fetch('http://localhost:5000/detect_emotion', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ landmarks }),
+    });
+
+    const data = await response.json();
+    if (response.ok) {
+      res.json(data);
+    } else {
+      console.error('❌ Flask response error:', data);
+      res.status(response.status).json(data);
+    }
+  } catch (err) {
+    console.error('❌ Error forwarding to Flask:', err);
+    res.status(500).json({ message: 'Error communicating with emotion detection service' });
+  }
+});
+
 // Save Emotion Data
-router.post('/save-emotion', async (req, res) => {
+router.post('/save-emotion', verifyToken, async (req, res) => {
   const { userId, emotion, question } = req.body;
   if (!userId || !emotion || !question) {
     return res.status(400).json({ message: 'All fields are required' });
@@ -66,7 +404,7 @@ router.post('/save-emotion', async (req, res) => {
 });
 
 // Get Emotion Trends
-router.get('/emotion-trends/:userId', async (req, res) => {
+router.get('/emotion-trends/:userId', verifyToken, async (req, res) => {
   try {
     const child = await Child.findOne({ userId: req.params.userId });
     if (!child) return res.status(404).json({ message: 'Child not found' });
@@ -78,7 +416,7 @@ router.get('/emotion-trends/:userId', async (req, res) => {
 });
 
 // Save Game Report
-router.post('/save-game', async (req, res) => {
+router.post('/save-game', verifyToken, async (req, res) => {
   const { userId, score, emotions, question, isCorrect } = req.body;
   if (!userId || score === undefined || !question || isCorrect === undefined) {
     return res.status(400).json({ message: 'userId, score, question, and isCorrect are required' });
@@ -110,11 +448,17 @@ router.post('/save-game', async (req, res) => {
 });
 
 // Get Game Reports
-router.get('/game-reports/:userId', async (req, res) => {
+router.get('/game-reports/:userId', verifyToken, async (req, res) => {
   try {
+    const limit = parseInt(req.query.limit) || 10;
     const child = await Child.findOne({ userId: req.params.userId });
     if (!child) return res.status(404).json({ message: 'Child not found' });
-    res.json(child.gameReports);
+
+    const gameReports = child.gameReports
+      .sort((a, b) => new Date(b.completedAt) - new Date(a.completedAt))
+      .slice(0, limit);
+
+    res.json(gameReports);
   } catch (err) {
     console.error('❌ Error fetching game reports:', err);
     res.status(500).json({ message: 'Server error' });
