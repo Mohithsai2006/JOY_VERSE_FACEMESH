@@ -291,3 +291,40 @@ h1 {
     font-size: 16px;
   }
 }
+/* Add this to the existing game.css */
+.animal-video {
+  width: 200px;
+  height: 200px;
+  object-fit: cover; /* Ensures the video fills the container without distortion */
+  border-radius: 15px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+  background-color: #ffffff;
+  padding: 15px;
+  transition: transform 0.2s ease;
+}
+
+.animal-video:hover {
+  transform: scale(1.03);
+}
+
+/* Responsive adjustments for the video */
+@media (max-width: 768px) {
+  .animal-video {
+    width: 150px;
+    height: 150px;
+  }
+}
+
+@media (max-width: 480px) {
+  .animal-video {
+    width: 120px;
+    height: 120px;
+  }
+}
+
+@media (max-width: 360px) {
+  .animal-video {
+    width: 100px;
+    height: 100px;
+  }
+}

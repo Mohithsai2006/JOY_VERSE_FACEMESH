@@ -477,238 +477,263 @@
   // };
 
   // export default Admin;
+// Admin.js: Component for admin dashboard to manage children and view reports
 "use client"
 
-import { useState, useEffect, useRef } from "react"
-import { useNavigate } from "react-router-dom"
-import axios from "axios"
-import io from "socket.io-client"
-import Chart from "chart.js/auto"
-import "../styles/admin.css"
+import { useState, useEffect, useRef } from "react";
+import { useNavigate } from "react-router-dom"; // For programmatic navigation
+import axios from "axios"; // For making HTTP requests to the backend
+import io from "socket.io-client"; // For real-time Socket.IO communication
+import Chart from "chart.js/auto"; // For rendering charts
+import "../styles/admin.css"; // Styles for the admin UI
 
 const Admin = () => {
-  const [activeSection, setActiveSection] = useState("register")
-  const [children, setChildren] = useState([])
-  const [selectedChild, setSelectedChild] = useState(null)
-  const [emotionTrends, setEmotionTrends] = useState([])
-  const [gameReports, setGameReports] = useState([])
-  const [searchQuery, setSearchQuery] = useState("")
+  // State to track the active section of the dashboard (register, listOfChildren, update, delete, seeReports)
+  const [activeSection, setActiveSection] = useState("register");
+  // State to store the list of registered children
+  const [children, setChildren] = useState([]);
+  // State to store the selected child for viewing reports
+  const [selectedChild, setSelectedChild] = useState(null);
+  // State to store emotion trends data for the selected child
+  const [emotionTrends, setEmotionTrends] = useState([]);
+  // State to store game reports for the selected child
+  const [gameReports, setGameReports] = useState([]);
+  // State to store the search query for finding a child
+  const [searchQuery, setSearchQuery] = useState("");
+  // State to store form data for registering a new child
   const [registerChild, setRegisterChild] = useState({
     childName: "",
     phone: "",
     userId: "",
-  })
-  const [editChild, setEditChild] = useState(null)
-  const [message, setMessage] = useState("")
-  const [isLoading, setIsLoading] = useState(true)
-  const [isFetchingReports, setIsFetchingReports] = useState(false)
-  
-  // Chart refs
-  const emotionTrendsChartRef = useRef(null)
-  const emotionDistributionChartRef = useRef(null)
-  const gamePerformanceChartRef = useRef(null)
-  
-  // Chart instances
-  const emotionTrendsChartInstance = useRef(null)
-  const emotionDistributionChartInstance = useRef(null)
-  const gamePerformanceChartInstance = useRef(null)
-  
-  const navigate = useNavigate()
-  const socket = io("http://localhost:3000", { transports: ["websocket"], reconnectionAttempts: 5 })
+  });
+  // State to store data for editing a child
+  const [editChild, setEditChild] = useState(null);
+  // State to display success or error messages
+  const [message, setMessage] = useState("");
+  // State to track loading state while fetching children
+  const [isLoading, setIsLoading] = useState(true);
+  // State to track loading state while fetching reports
+  const [isFetchingReports, setIsFetchingReports] = useState(false);
 
+  // Refs for chart canvases
+  const emotionTrendsChartRef = useRef(null);
+  const emotionDistributionChartRef = useRef(null);
+  const gamePerformanceChartRef = useRef(null);
+
+  // Refs to store chart instances
+  const emotionTrendsChartInstance = useRef(null);
+  const emotionDistributionChartInstance = useRef(null);
+  const gamePerformanceChartInstance = useRef(null);
+
+  const navigate = useNavigate(); // Hook for navigation
+  // Initialize Socket.IO client
+  const socket = io("http://localhost:3000", { transports: ["websocket"], reconnectionAttempts: 5 });
+
+  // Handle initial setup, authentication, and Socket.IO events
   useEffect(() => {
-    const token = localStorage.getItem("admin_token")
+    const token = localStorage.getItem("admin_token");
     if (!token) {
-      console.log("No admin_token, redirecting to /admin-login")
-      navigate("/admin-login")
-      return
+      console.log("No admin_token, redirecting to /admin-login");
+      navigate("/admin-login"); // Redirect to login if no token
+      return;
     }
 
-    fetchChildren(token)
+    fetchChildren(token); // Fetch registered children
 
-    socket.on("connect", () => console.log("Socket.IO connected"))
-    socket.on("connect_error", (err) => console.error("Socket.IO connection error:", err.message))
+    // Socket.IO event listeners
+    socket.on("connect", () => console.log("Socket.IO connected"));
+    socket.on("connect_error", (err) => console.error("Socket.IO connection error:", err.message));
+    // Handle real-time emotion updates
     socket.on("emotionUpdate", ({ parentId, userId, emotion, question, timestamp }) => {
       if (parentId === localStorage.getItem("admin_id") && userId === selectedChild) {
         setEmotionTrends((prev) => {
-          const newTrends = [...prev, { emotion, question, timestamp }]
-          updateEmotionCharts(newTrends)
-          return newTrends
-        })
+          const newTrends = [...prev, { emotion, question, timestamp }];
+          updateEmotionCharts(newTrends); // Update charts with new data
+          return newTrends;
+        });
       }
-    })
+    });
+    // Handle real-time game report updates
     socket.on("gameReportUpdate", ({ parentId, userId, score, emotions, question, isCorrect, completedAt }) => {
       if (parentId === localStorage.getItem("admin_id") && userId === selectedChild) {
         setGameReports((prev) => {
-          const newReports = [...prev, { score, emotions, question, isCorrect, completedAt }]
-          updateGamePerformanceChart(newReports)
-          return newReports
-        })
+          const newReports = [...prev, { score, emotions, question, isCorrect, completedAt }];
+          updateGamePerformanceChart(newReports); // Update chart with new data
+          return newReports;
+        });
       }
-    })
+    });
+    // Handle new child registration
     socket.on("newChild", ({ parentId, child }) => {
       if (parentId === localStorage.getItem("admin_id")) {
-        setChildren((prev) => [child, ...prev])
+        setChildren((prev) => [child, ...prev]);
       }
-    })
+    });
+    // Handle child updates
     socket.on("childUpdated", ({ parentId, child }) => {
       if (parentId === localStorage.getItem("admin_id")) {
-        setChildren((prev) => prev.map((c) => (c._id === child._id ? child : c)))
+        setChildren((prev) => prev.map((c) => (c._id === child._id ? child : c)));
       }
-    })
+    });
+    // Handle child deletion
     socket.on("childDeleted", ({ parentId, childId }) => {
       if (parentId === localStorage.getItem("admin_id")) {
-        setChildren((prev) => prev.filter((c) => c._id !== childId))
+        setChildren((prev) => prev.filter((c) => c._id !== childId));
       }
-    })
+    });
+    // Handle child status updates
     socket.on("childStatusUpdated", ({ parentId, child }) => {
       if (parentId === localStorage.getItem("admin_id")) {
-        setChildren((prev) => prev.map((c) => (c._id === child._id ? child : c)))
+        setChildren((prev) => prev.map((c) => (c._id === child._id ? child : c)));
       }
-    })
+    });
 
-    return () => socket.disconnect()
-  }, [navigate, selectedChild])
+    // Cleanup Socket.IO connection on unmount
+    return () => socket.disconnect();
+  }, [navigate, selectedChild]);
 
-  // Effect to update charts when data changes
+  // Update charts when active section or data changes
   useEffect(() => {
     if (activeSection === "seeReports" && selectedChild) {
-      updateEmotionCharts(emotionTrends)
-      updateGamePerformanceChart(gameReports)
+      updateEmotionCharts(emotionTrends);
+      updateGamePerformanceChart(gameReports);
     }
-  }, [activeSection, selectedChild, emotionTrends, gameReports])
+  }, [activeSection, selectedChild, emotionTrends, gameReports]);
 
-  // Effect to clean up charts when component unmounts
+  // Cleanup chart instances on component unmount
   useEffect(() => {
     return () => {
       if (emotionTrendsChartInstance.current) {
-        emotionTrendsChartInstance.current.destroy()
+        emotionTrendsChartInstance.current.destroy();
       }
       if (emotionDistributionChartInstance.current) {
-        emotionDistributionChartInstance.current.destroy()
+        emotionDistributionChartInstance.current.destroy();
       }
       if (gamePerformanceChartInstance.current) {
-        gamePerformanceChartInstance.current.destroy()
+        gamePerformanceChartInstance.current.destroy();
       }
-    }
-  }, [])
+    };
+  }, []);
 
+  // Fetch registered children from the backend
   const fetchChildren = async (token) => {
     try {
       const res = await axios.get("http://localhost:3000/admin/children", {
         headers: { Authorization: `Bearer ${token}` },
-      })
-      console.log("Fetched children:", res.data)
-      setChildren(res.data)
-      setIsLoading(false)
+      });
+      console.log("Fetched children:", res.data);
+      setChildren(res.data);
+      setIsLoading(false);
     } catch (error) {
-      console.error("Error fetching children:", error.response?.data || error.message)
-      setMessage("Error fetching children")
-      setIsLoading(false)
+      console.error("Error fetching children:", error.response?.data || error.message);
+      setMessage("Error fetching children");
+      setIsLoading(false);
     }
-  }
+  };
 
+  // Handle child selection for viewing reports
   const handleChildSelect = async (userId) => {
-    setSelectedChild(userId)
-    console.log("Selected child userId:", userId)
-    setIsFetchingReports(true)
-    const token = localStorage.getItem("admin_token")
+    setSelectedChild(userId);
+    console.log("Selected child userId:", userId);
+    setIsFetchingReports(true);
+    const token = localStorage.getItem("admin_token");
     try {
+      // Fetch emotion trends for the selected child
       const res = await axios.get(`http://localhost:3000/child/emotion-trends/${userId}`, {
         headers: { Authorization: `Bearer ${token}` },
-      })
-      console.log("Emotion trends response:", res.data)
-      setEmotionTrends(res.data || [])
+      });
+      console.log("Emotion trends response:", res.data);
+      setEmotionTrends(res.data || []);
     } catch (error) {
-      console.error("Error fetching emotion trends:", error.response?.data || error.message)
-      setMessage("Error fetching emotion trends")
-      setEmotionTrends([])
+      console.error("Error fetching emotion trends:", error.response?.data || error.message);
+      setMessage("Error fetching emotion trends");
+      setEmotionTrends([]);
     }
-    await fetchGameReport(userId)
-    setIsFetchingReports(false)
+    await fetchGameReport(userId); // Fetch game reports
+    setIsFetchingReports(false);
     if (activeSection === "seeReports") {
-      setActiveSection("seeReports")
+      setActiveSection("seeReports");
     }
-  }
+  };
 
+  // Fetch game reports for a specific child
   const fetchGameReport = async (userId) => {
-    const token = localStorage.getItem("admin_token")
+    const token = localStorage.getItem("admin_token");
     try {
       const res = await axios.get(`http://localhost:3000/child/game-reports/${userId}`, {
         headers: { Authorization: `Bearer ${token}` },
-      })
-      console.log("Game reports response:", res.data)
-      setGameReports(res.data || [])
+      });
+      console.log("Game reports response:", res.data);
+      setGameReports(res.data || []);
     } catch (error) {
-      console.error("Error fetching game reports:", error.response?.data || error.message)
-      setMessage("Error fetching game reports")
-      setGameReports([])
+      console.error("Error fetching game reports:", error.response?.data || error.message);
+      setMessage("Error fetching game reports");
+      setGameReports([]);
     }
-  }
+  };
 
+  // Update emotion charts with new data
   const updateEmotionCharts = (data) => {
-    if (!data || data.length === 0 || !emotionTrendsChartRef.current || !emotionDistributionChartRef.current) return
+    if (!data || data.length === 0 || !emotionTrendsChartRef.current || !emotionDistributionChartRef.current) return;
 
-    // Update Emotion Trends Chart
-    updateEmotionTrendsChart(data)
-    
-    // Update Emotion Distribution Chart
-    updateEmotionDistributionChart(data)
-  }
+    updateEmotionTrendsChart(data); // Update line chart
+    updateEmotionDistributionChart(data); // Update doughnut chart
+  };
 
+  // Update the emotion trends line chart
   const updateEmotionTrendsChart = (data) => {
     // Process data for the chart
-    const timestamps = []
-    const emotions = {}
-    const emotionCounts = {}
+    const timestamps = [];
+    const emotions = {};
+    const emotionCounts = {};
 
-    // Get unique dates and emotions
+    // Extract unique dates and emotion counts
     data.forEach((item) => {
-      const date = new Date(item.timestamp).toLocaleDateString()
+      const date = new Date(item.timestamp).toLocaleDateString();
       if (!timestamps.includes(date)) {
-        timestamps.push(date)
+        timestamps.push(date);
       }
 
       if (!emotions[item.emotion]) {
-        emotions[item.emotion] = []
-        emotionCounts[item.emotion] = {}
+        emotions[item.emotion] = [];
+        emotionCounts[item.emotion] = {};
       }
 
       if (!emotionCounts[item.emotion][date]) {
-        emotionCounts[item.emotion][date] = 0
+        emotionCounts[item.emotion][date] = 0;
       }
 
-      emotionCounts[item.emotion][date]++
-    })
+      emotionCounts[item.emotion][date]++;
+    });
 
-    // Sort timestamps
-    timestamps.sort((a, b) => new Date(a) - new Date(b))
+    // Sort timestamps chronologically
+    timestamps.sort((a, b) => new Date(a) - new Date(b));
 
-    // Create datasets
+    // Create datasets for each emotion
     const datasets = Object.keys(emotions).map((emotion, index) => {
-      const emotionData = timestamps.map((date) => emotionCounts[emotion][date] || 0)
+      const emotionData = timestamps.map((date) => emotionCounts[emotion][date] || 0);
 
-      // Generate a color based on the emotion
-      let color
+      // Assign colors based on emotion
+      let color;
       switch (emotion.toLowerCase()) {
         case "happy":
-          color = "rgba(75, 192, 192, 0.7)"
-          break
+          color = "rgba(75, 192, 192, 0.7)";
+          break;
         case "sad":
-          color = "rgba(54, 162, 235, 0.7)"
-          break
+          color = "rgba(54, 162, 235, 0.7)";
+          break;
         case "angry":
-          color = "rgba(255, 99, 132, 0.7)"
-          break
+          color = "rgba(255, 99, 132, 0.7)";
+          break;
         case "neutral":
-          color = "rgba(201, 203, 207, 0.7)"
-          break
+          color = "rgba(201, 203, 207, 0.7)";
+          break;
         default:
-          // Generate a random color if emotion is not recognized
-          const r = Math.floor(Math.random() * 255)
-          const g = Math.floor(Math.random() * 255)
-          const b = Math.floor(Math.random() * 255)
-          color = `rgba(${r}, ${g}, ${b}, 0.7)`
+          // Generate random color for unrecognized emotions
+          const r = Math.floor(Math.random() * 255);
+          const g = Math.floor(Math.random() * 255);
+          const b = Math.floor(Math.random() * 255);
+          color = `rgba(${r}, ${g}, ${b}, 0.7)`;
       }
 
       return {
@@ -718,16 +743,16 @@ const Admin = () => {
         backgroundColor: color.replace("0.7", "0.2"),
         tension: 0.4,
         fill: true,
-      }
-    })
+      };
+    });
 
-    // Destroy previous chart if it exists
+    // Destroy existing chart if it exists
     if (emotionTrendsChartInstance.current) {
-      emotionTrendsChartInstance.current.destroy()
+      emotionTrendsChartInstance.current.destroy();
     }
 
-    // Create new chart
-    const ctx = emotionTrendsChartRef.current.getContext("2d")
+    // Create new line chart
+    const ctx = emotionTrendsChartRef.current.getContext("2d");
     emotionTrendsChartInstance.current = new Chart(ctx, {
       type: "line",
       data: {
@@ -766,51 +791,50 @@ const Admin = () => {
           },
         },
       },
-    })
-  }
+    });
+  };
 
+  // Update the emotion distribution doughnut chart
   const updateEmotionDistributionChart = (data) => {
-    // Process data for the chart
-    const emotionCounts = {}
-
     // Count occurrences of each emotion
+    const emotionCounts = {};
     data.forEach((item) => {
       if (!emotionCounts[item.emotion]) {
-        emotionCounts[item.emotion] = 0
+        emotionCounts[item.emotion] = 0;
       }
-      emotionCounts[item.emotion]++
-    })
+      emotionCounts[item.emotion]++;
+    });
 
-    const emotions = Object.keys(emotionCounts)
-    const counts = emotions.map((emotion) => emotionCounts[emotion])
+    const emotions = Object.keys(emotionCounts);
+    const counts = emotions.map((emotion) => emotionCounts[emotion]);
 
     // Generate colors for each emotion
     const backgroundColors = emotions.map((emotion) => {
       switch (emotion.toLowerCase()) {
         case "happy":
-          return "rgba(75, 192, 192, 0.7)"
+          return "rgba(75, 192, 192, 0.7)";
         case "sad":
-          return "rgba(54, 162, 235, 0.7)"
+          return "rgba(54, 162, 235, 0.7)";
         case "angry":
-          return "rgba(255, 99, 132, 0.7)"
+          return "rgba(255, 99, 132, 0.7)";
         case "neutral":
-          return "rgba(201, 203, 207, 0.7)"
+          return "rgba(201, 203, 207, 0.7)";
         default:
-          // Generate a random color if emotion is not recognized
-          const r = Math.floor(Math.random() * 255)
-          const g = Math.floor(Math.random() * 255)
-          const b = Math.floor(Math.random() * 255)
-          return `rgba(${r}, ${g}, ${b}, 0.7)`
+          // Generate random color for unrecognized emotions
+          const r = Math.floor(Math.random() * 255);
+          const g = Math.floor(Math.random() * 255);
+          const b = Math.floor(Math.random() * 255);
+          return `rgba(${r}, ${g}, ${b}, 0.7)`;
       }
-    })
+    });
 
-    // Destroy previous chart if it exists
+    // Destroy existing chart if it exists
     if (emotionDistributionChartInstance.current) {
-      emotionDistributionChartInstance.current.destroy()
+      emotionDistributionChartInstance.current.destroy();
     }
 
-    // Create new chart
-    const ctx = emotionDistributionChartRef.current.getContext("2d")
+    // Create new doughnut chart
+    const ctx = emotionDistributionChartRef.current.getContext("2d");
     emotionDistributionChartInstance.current = new Chart(ctx, {
       type: "doughnut",
       data: {
@@ -841,62 +865,58 @@ const Admin = () => {
           },
         },
       },
-    })
-  }
+    });
+  };
 
+  // Update the game performance bar chart
   const updateGamePerformanceChart = (data) => {
-    if (!data || data.length === 0 || !gamePerformanceChartRef.current) return
+    if (!data || data.length === 0 || !gamePerformanceChartRef.current) return;
 
     // Process data for the chart
-    const dates = []
-    const scores = []
-    const correctAnswers = []
-    const incorrectAnswers = []
+    const dates = [];
+    const scores = [];
+    const correctAnswers = [];
+    const incorrectAnswers = [];
 
     // Group data by date
-    const groupedData = {}
-
+    const groupedData = {};
     data.forEach((item) => {
-      const date = new Date(item.completedAt).toLocaleDateString()
-
+      const date = new Date(item.completedAt).toLocaleDateString();
       if (!groupedData[date]) {
         groupedData[date] = {
           scores: [],
           correct: 0,
           incorrect: 0,
-        }
+        };
       }
-
-      groupedData[date].scores.push(item.score)
+      groupedData[date].scores.push(item.score);
       if (item.isCorrect) {
-        groupedData[date].correct++
+        groupedData[date].correct++;
       } else {
-        groupedData[date].incorrect++
+        groupedData[date].incorrect++;
       }
-    })
+    });
 
     // Prepare data for chart
     Object.keys(groupedData)
       .sort((a, b) => new Date(a) - new Date(b))
       .forEach((date) => {
-        dates.push(date)
-
+        dates.push(date);
         // Calculate average score for the day
         const avgScore =
-          groupedData[date].scores.reduce((sum, score) => sum + score, 0) / groupedData[date].scores.length
-        scores.push(avgScore)
+          groupedData[date].scores.reduce((sum, score) => sum + score, 0) / groupedData[date].scores.length;
+        scores.push(avgScore);
+        correctAnswers.push(groupedData[date].correct);
+        incorrectAnswers.push(groupedData[date].incorrect);
+      });
 
-        correctAnswers.push(groupedData[date].correct)
-        incorrectAnswers.push(groupedData[date].incorrect)
-      })
-
-    // Destroy previous chart if it exists
+    // Destroy existing chart if it exists
     if (gamePerformanceChartInstance.current) {
-      gamePerformanceChartInstance.current.destroy()
+      gamePerformanceChartInstance.current.destroy();
     }
 
-    // Create new chart
-    const ctx = gamePerformanceChartRef.current.getContext("2d")
+    // Create new bar chart
+    const ctx = gamePerformanceChartRef.current.getContext("2d");
     gamePerformanceChartInstance.current = new Chart(ctx, {
       type: "bar",
       data: {
@@ -973,29 +993,31 @@ const Admin = () => {
           },
         },
       },
-    })
-  }
+    });
+  };
 
+  // Handle child search by name
   const handleSearch = () => {
-    const child = children.find((c) => c.childName.toLowerCase().includes(searchQuery.toLowerCase()))
+    const child = children.find((c) => c.childName.toLowerCase().includes(searchQuery.toLowerCase()));
     if (child) {
-      console.log("Search found child:", child)
-      handleChildSelect(child.userId)
+      console.log("Search found child:", child);
+      handleChildSelect(child.userId);
     } else {
-      setMessage("Child not found")
+      setMessage("Child not found");
     }
-  }
+  };
 
+  // Handle child registration form submission
   const handleRegisterChild = async (e) => {
-    e.preventDefault()
-    const token = localStorage.getItem("admin_token")
+    e.preventDefault();
+    const token = localStorage.getItem("admin_token");
     if (!token) {
-      navigate("/admin-login")
-      return
+      navigate("/admin-login");
+      return;
     }
     if (!/^\d{6}$/.test(registerChild.userId)) {
-      setMessage("User ID must be a 6-digit number")
-      return
+      setMessage("User ID must be a 6-digit number");
+      return;
     }
     try {
       const res = await axios.post(
@@ -1007,18 +1029,19 @@ const Admin = () => {
         {
           headers: { Authorization: `Bearer ${token}` },
         },
-      )
-      setMessage(res.data.message)
-      setRegisterChild({ childName: "", phone: "", userId: "" })
-      fetchChildren(token)
+      );
+      setMessage(res.data.message);
+      setRegisterChild({ childName: "", phone: "", userId: "" }); // Reset form
+      fetchChildren(token); // Refresh children list
     } catch (error) {
-      console.error("Error registering child:", error.response?.data || error.message)
-      setMessage(error.response?.data?.message || "Registration failed")
+      console.error("Error registering child:", error.response?.data || error.message);
+      setMessage(error.response?.data?.message || "Registration failed");
     }
-  }
+  };
 
+  // Handle child details update
   const handleUpdateChild = async () => {
-    const token = localStorage.getItem("admin_token")
+    const token = localStorage.getItem("admin_token");
     try {
       const res = await axios.put(
         `http://localhost:3000/admin/children/${editChild._id}/edit`,
@@ -1030,19 +1053,20 @@ const Admin = () => {
         {
           headers: { Authorization: `Bearer ${token}` },
         },
-      )
-      setMessage(res.data.message)
-      setEditChild(null)
-      fetchChildren(token)
-      setActiveSection("listOfChildren")
+      );
+      setMessage(res.data.message);
+      setEditChild(null); // Clear edit form
+      fetchChildren(token); // Refresh children list
+      setActiveSection("listOfChildren");
     } catch (error) {
-      console.error("Error updating child:", error.response?.data || error.message)
-      setMessage(error.response?.data?.message || "Update failed")
+      console.error("Error updating child:", error.response?.data || error.message);
+      setMessage(error.response?.data?.message || "Update failed");
     }
-  }
+  };
 
+  // Handle password reset for a child
   const handleResetPassword = async (childId) => {
-    const token = localStorage.getItem("admin_token")
+    const token = localStorage.getItem("admin_token");
     try {
       const res = await axios.post(
         `http://localhost:3000/admin/children/${childId}/reset-password`,
@@ -1050,16 +1074,17 @@ const Admin = () => {
         {
           headers: { Authorization: `Bearer ${token}` },
         },
-      )
-      setMessage(`Password reset. Temporary password: ${res.data.temporaryPassword}`)
+      );
+      setMessage(`Password reset. Temporary password: ${res.data.temporaryPassword}`);
     } catch (error) {
-      console.error("Error resetting password:", error.response?.data || error.message)
-      setMessage(error.response?.data?.message || "Reset failed")
+      console.error("Error resetting password:", error.response?.data || error.message);
+      setMessage(error.response?.data?.message || "Reset failed");
     }
-  }
+  };
 
+  // Handle toggling child account status (active/inactive)
   const handleToggleStatus = async (childId, isActive) => {
-    const token = localStorage.getItem("admin_token")
+    const token = localStorage.getItem("admin_token");
     try {
       const res = await axios.patch(
         `http://localhost:3000/admin/children/${childId}/status`,
@@ -1067,35 +1092,38 @@ const Admin = () => {
         {
           headers: { Authorization: `Bearer ${token}` },
         },
-      )
-      setMessage(res.data.message)
-      fetchChildren(token)
+      );
+      setMessage(res.data.message);
+      fetchChildren(token); // Refresh children list
     } catch (error) {
-      console.error("Error updating status:", error.response?.data || error.message)
-      setMessage(error.response?.data?.message || "Status update failed")
+      console.error("Error updating status:", error.response?.data || error.message);
+      setMessage(error.response?.data?.message || "Status update failed");
     }
-  }
+  };
 
+  // Handle child deletion
   const handleDeleteChild = async (childId) => {
-    const token = localStorage.getItem("admin_token")
+    const token = localStorage.getItem("admin_token");
     try {
       const res = await axios.delete(`http://localhost:3000/admin/children/${childId}/delete`, {
         headers: { Authorization: `Bearer ${token}` },
-      })
-      setMessage(res.data.message)
-      fetchChildren(token)
+      });
+      setMessage(res.data.message);
+      fetchChildren(token); // Refresh children list
     } catch (error) {
-      console.error("Error deleting child:", error.response?.data || error.message)
-      setMessage(error.response?.data?.message || "Deletion failed")
+      console.error("Error deleting child:", error.response?.data || error.message);
+      setMessage(error.response?.data?.message || "Deletion failed");
     }
-  }
+  };
 
+  // Show loading state while fetching children
   if (isLoading) {
-    return <div className="admin-container">Loading...</div>
+    return <div className="admin-container">Loading...</div>;
   }
 
   return (
     <div className="admin-container">
+      {/* Navigation bar for switching sections */}
       <nav className="admin-nav">
         <button onClick={() => setActiveSection("register")}>Register</button>
         <button onClick={() => setActiveSection("listOfChildren")}>List of Children</button>
@@ -1107,6 +1135,7 @@ const Admin = () => {
       {message && <p className="message">{message}</p>}
 
       <div className="admin-content">
+        {/* Register new child section */}
         {activeSection === "register" && (
           <div className="child-registration">
             <h2>Register New Child</h2>
@@ -1137,6 +1166,7 @@ const Admin = () => {
           </div>
         )}
 
+        {/* List registered children section */}
         {activeSection === "listOfChildren" && (
           <div className="child-list">
             <h2>Registered Children</h2>
@@ -1167,6 +1197,7 @@ const Admin = () => {
           </div>
         )}
 
+        {/* Update child details section */}
         {activeSection === "update" && (
           <div className="edit-child">
             <h2>Update Child</h2>
@@ -1174,8 +1205,8 @@ const Admin = () => {
               <select
                 value={editChild ? editChild._id : ""}
                 onChange={(e) => {
-                  const child = children.find((c) => c._id === e.target.value)
-                  setEditChild(child || null)
+                  const child = children.find((c) => c._id === e.target.value);
+                  setEditChild(child || null);
                 }}
               >
                 <option value="">Select a child</option>
@@ -1218,6 +1249,7 @@ const Admin = () => {
           </div>
         )}
 
+        {/* Delete children section */}
         {activeSection === "delete" && (
           <div className="child-list">
             <h2>Delete Children</h2>
@@ -1252,6 +1284,7 @@ const Admin = () => {
           </div>
         )}
 
+        {/* View reports section */}
         {activeSection === "seeReports" && (
           <div className="reports-section">
             <h2>Select Child for Reports</h2>
@@ -1268,24 +1301,28 @@ const Admin = () => {
 
             {selectedChild && !isFetchingReports ? (
               <div className="reports-grid">
+                {/* Emotion trends chart */}
                 <div className="chart-card emotion-trends-chart">
                   <div className="chart-container">
                     <canvas ref={emotionTrendsChartRef}></canvas>
                   </div>
                 </div>
 
+                {/* Emotion distribution chart */}
                 <div className="chart-card emotion-distribution-chart">
                   <div className="chart-container">
                     <canvas ref={emotionDistributionChartRef}></canvas>
                   </div>
                 </div>
 
+                {/* Game performance chart */}
                 <div className="chart-card game-performance-chart">
                   <div className="chart-container">
                     <canvas ref={gamePerformanceChartRef}></canvas>
                   </div>
                 </div>
 
+                {/* Recent game reports table */}
                 <div className="chart-card recent-reports">
                   <h2>Recent Game Reports</h2>
                   <div className="table-container">
@@ -1326,12 +1363,13 @@ const Admin = () => {
         )}
       </div>
 
+      {/* Footer with logout button */}
       <div className="footer">
         <button
           onClick={() => {
-            localStorage.removeItem("admin_token")
-            localStorage.removeItem("admin_id")
-            navigate("/admin-login")
+            localStorage.removeItem("admin_token");
+            localStorage.removeItem("admin_id");
+            navigate("/admin-login");
           }}
           className="back-btn"
         >
@@ -1339,7 +1377,7 @@ const Admin = () => {
         </button>
       </div>
     </div>
-  )
-}
+  );
+};
 
-export default Admin
+export default Admin;

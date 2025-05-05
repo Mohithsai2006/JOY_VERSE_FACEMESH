@@ -1,11 +1,15 @@
+// SuperAdmin.js: Component for superadmin dashboard to manage admin accounts
 import React, { useEffect, useState, useCallback } from 'react';
-import axios from 'axios';
-import { useNavigate } from 'react-router-dom';
-import '../styles/superadmin.css';
+import axios from 'axios'; // For making HTTP requests to the backend
+import { useNavigate } from 'react-router-dom'; // For programmatic navigation
+import '../styles/superadmin.css'; // Styles for the superadmin UI
 
 const SuperAdmin = () => {
-  const [activeSection, setActiveSection] = useState('register'); // Default to 'register'
+  // State to track the active section of the dashboard (register, listOfAdmins, update, delete)
+  const [activeSection, setActiveSection] = useState('register');
+  // State to store the list of registered admins
   const [admins, setAdmins] = useState([]);
+  // State to store form data for registering a new admin
   const [adminData, setAdminData] = useState({
     name: '',
     phone: '',
@@ -13,34 +17,39 @@ const SuperAdmin = () => {
     profilePhoto: null,
     password: '',
   });
-  const [selectedAdmin, setSelectedAdmin] = useState(null); // For Update section
+  // State to store the selected admin for updating
+  const [selectedAdmin, setSelectedAdmin] = useState(null);
+  // State to store the phone number for deleting an admin
   const [phoneToDelete, setPhoneToDelete] = useState('');
+  // State to display success or error messages
   const [message, setMessage] = useState('');
-  const navigate = useNavigate();
+  const navigate = useNavigate(); // Hook for navigation
 
-  // Fetch admins only when token is valid
+  // Fetch admins from the backend (memoized to avoid unnecessary re-renders)
   const fetchAdmins = useCallback(async (token) => {
     try {
       const response = await axios.get('http://localhost:3000/superadmin/admins', {
         headers: { Authorization: `Bearer ${token}` },
       });
-      setAdmins(response.data);
+      setAdmins(response.data); // Update admins list
     } catch (error) {
       console.error('Error fetching admins:', error);
       setMessage('Failed to fetch admins');
     }
   }, []);
 
+  // Check for token and fetch admins on component mount
   useEffect(() => {
     const token = localStorage.getItem('superadmin_token');
     if (!token) {
-      navigate('/superadmin-login');
+      navigate('/superadmin-login'); // Redirect to login if no token
       return;
     }
 
     fetchAdmins(token);
   }, [navigate, fetchAdmins]);
 
+  // Handle admin registration form submission
   const handleAdminRegistration = async (e) => {
     e.preventDefault();
     const token = localStorage.getItem('superadmin_token');
@@ -49,6 +58,7 @@ const SuperAdmin = () => {
       return;
     }
 
+    // Create FormData for multipart form submission
     const formData = new FormData();
     formData.append('name', adminData.name);
     formData.append('phone', adminData.phone);
@@ -65,17 +75,18 @@ const SuperAdmin = () => {
           'Content-Type': 'multipart/form-data',
         },
       });
-      setMessage(response.data.message);
-      setAdmins(prev => [...prev, response.data.admin]);
+      setMessage(response.data.message); // Display success message
+      setAdmins(prev => [...prev, response.data.admin]); // Add new admin to list
+      // Reset form
       setAdminData({ name: '', phone: '', email: '', profilePhoto: null, password: '' });
-      // Clear file input
-      document.getElementById('profilePhoto').value = null;
+      document.getElementById('profilePhoto').value = null; // Clear file input
     } catch (error) {
       console.error('Error registering admin:', error);
       setMessage(error.response?.data?.message || 'Registration failed');
     }
   };
 
+  // Handle enabling or disabling an admin
   const handleToggleAdmin = async (active) => {
     if (!selectedAdmin) {
       setMessage('Please select an admin');
@@ -89,19 +100,21 @@ const SuperAdmin = () => {
         { phone: selectedAdmin.phone, active },
         { headers: { Authorization: `Bearer ${token}` } }
       );
-      setMessage(response.data.message);
+      setMessage(response.data.message); // Display success message
+      // Update admin in the list
       setAdmins(prev =>
         prev.map(admin =>
           admin.phone === selectedAdmin.phone ? response.data.admin : admin
         )
       );
-      setSelectedAdmin(null); // Clear selection after action
+      setSelectedAdmin(null); // Clear selection
     } catch (error) {
       console.error('Error toggling admin:', error);
       setMessage(error.response?.data?.message || 'Error toggling admin');
     }
   };
 
+  // Handle admin deletion
   const handleDeleteAdmin = async () => {
     if (!phoneToDelete) {
       setMessage('Please enter a phone number');
@@ -113,15 +126,17 @@ const SuperAdmin = () => {
       const response = await axios.delete(`http://localhost:3000/superadmin/delete-admin/${phoneToDelete}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      setMessage(response.data.message);
+      setMessage(response.data.message); // Display success message
+      // Remove deleted admin from the list
       setAdmins(prev => prev.filter(admin => admin.phone !== phoneToDelete));
-      setPhoneToDelete('');
+      setPhoneToDelete(''); // Clear input
     } catch (error) {
       console.error('Error deleting admin:', error);
       setMessage(error.response?.data?.message || 'Error deleting admin');
     }
   };
 
+  // Handle logout by clearing token and redirecting to login
   const handleLogout = () => {
     localStorage.removeItem('superadmin_token');
     navigate('/superadmin-login');
@@ -129,6 +144,7 @@ const SuperAdmin = () => {
 
   return (
     <div className="superadmin-container">
+      {/* Navigation bar for switching sections */}
       <nav className="superadmin-nav">
         <button onClick={() => setActiveSection('register')}>Register</button>
         <button onClick={() => setActiveSection('listOfAdmins')}>List of Admins</button>
@@ -139,6 +155,7 @@ const SuperAdmin = () => {
       {message && <p className="message">{message}</p>}
 
       <div className="admin-content">
+        {/* Register new admin section */}
         {activeSection === 'register' && (
           <div className="admin-registration">
             <h2>Register New Admin</h2>
@@ -182,6 +199,7 @@ const SuperAdmin = () => {
           </div>
         )}
 
+        {/* List registered admins section */}
         {activeSection === 'listOfAdmins' && (
           <div className="admin-list">
             <h2>Registered Admins</h2>
@@ -210,6 +228,7 @@ const SuperAdmin = () => {
           </div>
         )}
 
+        {/* Update admin status section */}
         {activeSection === 'update' && (
           <div className="admin-actions">
             <h2>Update Admin</h2>
@@ -240,6 +259,7 @@ const SuperAdmin = () => {
           </div>
         )}
 
+        {/* Delete admin section */}
         {activeSection === 'delete' && (
           <div className="admin-actions">
             <h2>Delete Admin</h2>
@@ -254,6 +274,7 @@ const SuperAdmin = () => {
         )}
       </div>
 
+      {/* Footer with logout button */}
       <div className="footer">
         <button onClick={handleLogout} className="logout-btn">Logout</button>
       </div>
