@@ -7,6 +7,7 @@ import Admin from './components/Admin';
 import ChildLogin from './components/ChildLogin';
 import Game from './components/Game';
 import ProtectedRoute from './components/ProtectedRoute';
+import ErrorPage from './components/ErrorPage'; // Import the new component
 
 function App() {
   return (
@@ -24,6 +25,7 @@ function App() {
         <Route element={<ProtectedRoute allowedRoles={['superadmin']} />}>
           <Route path="/superadmin" element={<SuperAdmin />} />
         </Route>
+        <Route path="*" element={<ErrorPage />} /> {/* Catch-all route for 404 */}
       </Routes>
     </BrowserRouter>
   );
