@@ -12,6 +12,13 @@ const ChildLogin = () => {
   const inputRefs = useRef([]);
   const navigate = useNavigate();
 
+  // Clear tokens on mount to ensure fresh login
+  useEffect(() => {
+    localStorage.removeItem('child_token');
+    localStorage.removeItem('userId');
+    inputRefs.current[0].focus();
+  }, []);
+
   const handleDigitChange = (value, index) => {
     if (!/^\d?$/.test(value)) return;
     const newDigits = [...digits];
@@ -41,14 +48,12 @@ const ChildLogin = () => {
       navigate('/game');
     } catch (error) {
       setErrorMessage(error.message);
+      localStorage.removeItem('child_token');
+      localStorage.removeItem('userId');
     } finally {
       setLoading(false);
     }
   };
-
-  useEffect(() => {
-    inputRefs.current[0].focus();
-  }, []);
 
   return (
     <div className="login-body">
@@ -91,9 +96,6 @@ const ChildLogin = () => {
         <Link to="/admin-login" className="admin-btn">
           Admin Login
         </Link>
-        {/* <Link to="/superadmin-login" className="superadmin-btn">
-          SuperAdmin Login
-        </Link> */}
       </div>
     </div>
   );
