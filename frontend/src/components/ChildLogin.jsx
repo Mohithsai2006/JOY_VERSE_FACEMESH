@@ -91,9 +91,9 @@ const ChildLogin = () => {
         <Link to="/admin-login" className="admin-btn">
           Admin Login
         </Link>
-        <Link to="/superadmin-login" className="superadmin-btn">
+        {/* <Link to="/superadmin-login" className="superadmin-btn">
           SuperAdmin Login
-        </Link>
+        </Link> */}
       </div>
     </div>
   );

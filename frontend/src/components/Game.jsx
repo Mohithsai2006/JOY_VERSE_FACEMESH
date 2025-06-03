@@ -577,6 +577,8 @@ const Game = () => {
   const [questionEmotions, setQuestionEmotions] = useState([]);
   const [recentReport, setRecentReport] = useState(null);
   const [reportError, setReportError] = useState(null);
+  const [isGameRunning, setIsGameRunning] = useState(false);
+  const [readyToNavigate, setReadyToNavigate] = useState(false);
 
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
@@ -599,23 +601,38 @@ const Game = () => {
   }, []);
 
   useEffect(() => {
+    if (gameStarted && !gameCompleted) {
+      setIsGameRunning(true);
+    }
     if (gameCompleted) {
+      setIsGameRunning(false); // Stop camera
       confettiRef.current.addConfetti({
-        emojis: ['🎉', '🥳', '✨'],
-        confettiRadius: 6,
-        confettiNumber: 125,
-        confettiColors: ['#ff0a54', '#ff477e', '#ff85a1', '#6e8efb', '#a777e3'],
+        confettiColors: ['#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEEAD'], // Vibrant colors
+        confettiRadius: 6, // Larger particles
+        confettiNumber: 300, // High density
+        spread: 80, // Full-screen effect
+        origin: { y: 0.5 }, // Centered
       });
+      // UPDATE: Increased cleanup delay to 1000ms
+      const cleanupTimer = setTimeout(() => {
+        setReadyToNavigate(true);
+      }, 1000); // Allow time for camera cleanup
 
-      const timer = setTimeout(() => {
+      return () => clearTimeout(cleanupTimer);
+    }
+  }, [gameStarted, gameCompleted]);
+
+  useEffect(() => {
+    if (readyToNavigate) {
+      const navigationTimer = setTimeout(() => {
         localStorage.removeItem('child_token');
         localStorage.removeItem('userId');
         navigate('/');
-      }, 5000);
+      }, 4000); // 5s total - 1000ms cleanup = 4000ms
 
-      return () => clearTimeout(timer);
+      return () => clearTimeout(navigationTimer);
     }
-  }, [gameCompleted, navigate]);
+  }, [readyToNavigate, navigate]);
 
   useEffect(() => {
     if (gameCompleted) {
@@ -673,7 +690,7 @@ const Game = () => {
       .catch((error) => console.error('Error saving emotion:', error));
   };
 
-  useEmotionDetection(videoRef, canvasRef, emotionDisplayRef, gameStarted, handleEmotionsCollected);
+  useEmotionDetection(videoRef, canvasRef, emotionDisplayRef, isGameRunning, handleEmotionsCollected);
 
   const words = [
     { correct: 'dog', jumbled: 'gdo', image: dogImage },
@@ -803,9 +820,10 @@ const Game = () => {
         />
       )}
 
+      {/* UPDATE: Keep video and canvas mounted to prevent null refs */}
       <video
         ref={videoRef}
-        style={{ display: 'none' }}
+        style={{ display: isGameRunning ? 'none' : 'none' }} // Always mounted, hidden
         autoPlay
         playsInline
         muted
@@ -815,15 +833,25 @@ const Game = () => {
 
       <canvas
         ref={canvasRef}
-        style={{ position: 'absolute', top: 0, left: 0, zIndex: 1 }}
+        style={{ position: 'absolute', top: 0, left: 0, zIndex: 1, display: isGameRunning ? 'block' : 'none' }}
         width="640"
         height="480"
       />
 
+      {/* UPDATE: Ensure emotionDisplayRef is always mounted */}
       <div
         ref={emotionDisplayRef}
-        style={{ position: 'absolute', top: '10px', left: '10px', color: 'white', zIndex: 2 }}
-      />
+        style={{
+          position: 'absolute',
+          top: '10px',
+          left: '10px',
+          color: 'white',
+          zIndex: 2,
+          display: isGameRunning || gameCompleted ? 'block' : 'none', // Keep during completion
+        }}
+      >
+        Emotion: N/A {/* Fallback text */}
+      </div>
 
       <div className="content">
         {!gameStarted ? (
